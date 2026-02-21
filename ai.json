@@ -1,0 +1,132 @@
+{
+  "skills": {
+    "hypothesis-tree": {
+      "git": "https://github.com/flpbalada/thinking-toolkit",
+      "ref": "main",
+      "path": "plugins/hypothesis-tree/skills/hypothesis-tree"
+    },
+    "user-story-fundamentals": {
+      "git": "https://github.com/flpbalada/thinking-toolkit",
+      "ref": "main",
+      "path": "plugins/user-story-fundamentals/skills/user-story-fundamentals"
+    },
+    "five-whys": {
+      "git": "https://github.com/flpbalada/thinking-toolkit",
+      "ref": "main",
+      "path": "plugins/five-whys/skills/five-whys"
+    },
+    "graph-thinking": {
+      "git": "https://github.com/flpbalada/thinking-toolkit",
+      "ref": "main",
+      "path": "plugins/graph-thinking/skills/graph-thinking"
+    }
+  },
+  "mcp": {
+    "aws-knowledge-mcp": {
+      "url": "https://knowledge-mcp.global.api.aws"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "git": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git"
+      ]
+    },
+    "libragen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@libragen/mcp"
+      ],
+      "enabled": false
+    },
+    "run-box": {
+      "url": "http://127.0.0.1:3100/mcp"
+    }
+  },
+  "rules": {
+    "general": {
+      "path": "./rules/general.md"
+    },
+    "comments": {
+      "path": "./rules/comments.md"
+    },
+    "control-flow": {
+      "path": "./rules/control-flow.md"
+    },
+    "formatting": {
+      "path": "./rules/formatting.md"
+    },
+    "git": {
+      "path": "./rules/git.md"
+    },
+    "logging-error-handling": {
+      "path": "./rules/logging-error-handling.md"
+    },
+    "naming-conventions": {
+      "path": "./rules/naming-conventions.md"
+    },
+    "npm": {
+      "path": "./rules/npm.md"
+    },
+    "shell": {
+      "path": "./rules/shell.md"
+    },
+    "testing": {
+      "path": "./rules/testing.md"
+    },
+    "typescript": {
+      "path": "./rules/typescript.md"
+    },
+    "writing": {
+      "path": "./rules/writing.md"
+    },
+    "yaml": {
+      "path": "./rules/yaml.md"
+    }
+  },
+  "prompts": {
+    "aws-advice": {
+      "path": "./prompts/aws-advice.md"
+    },
+    "command": {
+      "path": "./prompts/command.md"
+    },
+    "create-dynamo-table-workflow": {
+      "path": "./prompts/create-dynamo-table-workflow.md"
+    },
+    "create-tool": {
+      "path": "./prompts/create-tool.md"
+    },
+    "debug": {
+      "path": "./prompts/debug.md"
+    },
+    "lessons-learned": {
+      "path": "./prompts/lessons-learned.md"
+    },
+    "prime-context": {
+      "path": "./prompts/prime-context.md"
+    },
+    "prompt-engineer": {
+      "path": "./prompts/prompt-engineer.md"
+    },
+    "review-changes": {
+      "path": "./prompts/review-changes.md"
+    },
+    "say": {
+      "path": "./prompts/say.md"
+    },
+    "test-a-library": {
+      "path": "./prompts/test-a-library.md"
+    },
+    "test-driven-development": {
+      "path": "./prompts/test-driven-development.md"
+    }
+  }
+}
