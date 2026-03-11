@@ -20,6 +20,9 @@
          "git": "https://github.com/flpbalada/thinking-toolkit",
          "ref": "main",
          "path": "plugins/graph-thinking/skills/graph-thinking"
+      },
+      "git": {
+         "path": "./skills/git/"
       }
    },
    "mcp": {
