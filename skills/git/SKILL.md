@@ -1,3 +1,9 @@
+---
+name: git
+description:
+  Use before committing ANYTHING to ensure proper commit message and branch naming.
+---
+
 ## Git
 
 ### Commit Messages
