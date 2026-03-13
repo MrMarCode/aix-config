@@ -91,6 +91,7 @@
       "review-changes": "./prompts/review-changes.md",
       "say": "./prompts/say.md",
       "test-a-library": "./prompts/test-a-library.md",
-      "test-driven-development": "./prompts/test-driven-development.md"
+      "test-driven-development": "./prompts/test-driven-development.md",
+      "task-loop": "./prompts/task-loop.md"
    }
 }
