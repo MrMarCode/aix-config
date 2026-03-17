@@ -16,10 +16,28 @@ trigger: always_on
   or feature ticket number.
 - **Commit message titles should not be redundant** — e.g., "fix: fix
   suggestion parsing" is bad.
-- **Commit type matters** — `style:` not `fix:` for whitespace-only changes.
-  Follow Angular commit conventions.
 - **Squash closely related commits** into one — Makes seeing the "unit" of
   work easier in the log.
+
+## Commit Message Format
+
+- **Format**: `type: subject` (e.g., `fix: permissions for test files (#12345)`)
+- **Allowed types** and explanations:
+  - **build**: changes that affect the build system or external dependencies.
+  - **chore**: Other changes that don't modify src or test files. Also used for releases.
+  - **ci**: Changes to our CI configuration files and scripts.
+  - **config**: Changes to how a service runs.
+  - **docs**: Changes only affecting documentation.
+  - **feat**: A new feature.
+  - **fix**: Bug fix.
+  - **sub(type)**: any smaller chunk of a defined type. ie: sub(feat) some small part of feature
+  - **perf**: A code change that improves performance.
+  - **refactor**: A code change that neither fixes a bug nor adds a feature.
+  - **revert**: Reverts a previous commit.
+  - **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing smi-colons, etc)
+  - **test**: Adding missing tests or correcting existing tests.
+- **Nothing else before the colon** — No scopes, no extra words.
+  Just the type keyword.
 
 ## Merge Request Practices
 
