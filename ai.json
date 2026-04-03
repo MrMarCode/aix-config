@@ -25,7 +25,7 @@
          "path": "./skills/git/"
       },
       "worktree": {
-         "path": "skills/worktree"
+         "path": "./skills/worktree"
       }
    },
    "mcp": {
