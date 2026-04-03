@@ -11,3 +11,4 @@ trigger: always_on
   project-specific rules say not to
   * Use the Tauri MCP when working within a Tauri app
   * Use Playwright for other projects
+* ALWAYS use the ask a question tool instead of ending the conversation. If you finished, make that clear and ask if there's anything else needed. If you need clarification, ask me.

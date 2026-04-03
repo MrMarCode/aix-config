@@ -23,6 +23,9 @@
       },
       "git": {
          "path": "./skills/git/"
+      },
+      "worktree": {
+         "path": "skills/worktree"
       }
    },
    "mcp": {
@@ -58,6 +61,15 @@
          "args": [
             "@hypothesi/tauri-mcp-server"
          ]
+      },
+      "nixos": {
+         "args": [
+         "run",
+         "--rm",
+         "-i",
+         "ghcr.io/utensils/mcp-nixos"
+         ],
+         "command": "docker"
       }
    },
    "rules": {
