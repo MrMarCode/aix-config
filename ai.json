@@ -62,6 +62,16 @@
             "@hypothesi/tauri-mcp-server"
          ]
       },
+      "mcp-playwright": {
+         "args": [
+         "-y",
+         "@playwright/mcp@latest"
+         ],
+         "command": "npx"
+      },
+      "custom-gitlab": {
+         "url": "http://localhost:3015/mcp"
+      },
       "nixos": {
          "args": [
          "run",
