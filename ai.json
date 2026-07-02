@@ -3,6 +3,9 @@
    "skills": {
       "worktree": {
          "path": "./skills/worktree"
+      },
+      "caveman": {
+         "path": "./skills/caveman/"
       }
    },
    "mcp": {
@@ -76,7 +79,8 @@
       "rust": "./rules/rust.md",
       "vue": "./rules/vue.md",
       "mcps": "./rules/mcps.md",
-      "tauri": "./rules/tauri.md"
+      "tauri": "./rules/tauri.md",
+      "caveman": "./rules/caveman.md"
    },
    "prompts": {
       "aws-advice": "./prompts/aws-advice.md",
@@ -93,6 +97,7 @@
       "test-driven-development": "./prompts/test-driven-development.md",
       "task-loop": "./prompts/task-loop.md",
       "justdoit": "./prompts/justdoit.md",
-      "plan": "./prompts/plan.md"
+      "plan": "./prompts/plan.md",
+      "review": "./prompts/review.md"
    }
 }
