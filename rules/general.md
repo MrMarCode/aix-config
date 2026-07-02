@@ -4,8 +4,6 @@ trigger: always_on
 
 # General Rules
 
-IMPORTANT: if your unsure about how a command or library works first look it up, then create a simple environment to test it and run it using run-box.
-
 ## Core Principles
 
    * Always take a declarative approach when writing code

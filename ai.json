@@ -80,7 +80,8 @@
       "vue": "./rules/vue.md",
       "mcps": "./rules/mcps.md",
       "tauri": "./rules/tauri.md",
-      "caveman": "./rules/caveman.md"
+      "caveman": "./rules/caveman.md",
+      "terminal": "./rules/terminal.md"
    },
    "prompts": {
       "aws-advice": "./prompts/aws-advice.md",
