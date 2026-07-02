@@ -15,9 +15,10 @@ Requires `git` and `yq`.
 
 ## Workflow
 
-1. Run `worktree.sh list` (no args) to see all configured repos
+1. Run bash `worktree.sh list` (no args) to see all configured repos
 2. If a matching repo exists, use its name as the first argument
 3. If no config exists yet, create a `.worktree.yaml` for the user
+4. Use worktree.sh create ... --symlink to automatically create a new worktree and default symlinks.
 
 ```bash
 # Show all configured repos
