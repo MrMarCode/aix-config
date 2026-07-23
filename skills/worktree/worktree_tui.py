@@ -107,13 +107,17 @@ class WorktreeListApp(App):
       item = event.item
       if not hasattr(item, 'entry'):
          return
-      self.action_cd()
+      self._cd_to_entry(item.entry)
 
    def action_cd(self):
       """Exit the TUI with the selected worktree path so the shell can cd."""
       entry = self._selected_entry()
       if entry:
-         self.exit(2, entry['worktree_path'])
+         self._cd_to_entry(entry)
+
+   def _cd_to_entry(self, entry):
+      """@param dict entry - exit the TUI so the shell cd's to worktree_path."""
+      self.exit(entry['worktree_path'], return_code=2)
 
    def action_open_editor(self):
       """Open the highlighted worktree in the configured editor."""
@@ -139,7 +143,7 @@ class WorktreeListApp(App):
 
    def action_refresh(self):
       """Re-scan worktrees and re-render the list."""
-      self.exit(1, 1)
+      self.exit(1, return_code=1)
 
    def _selected_entry(self):
       """@return dict|None - entry for the currently highlighted row."""

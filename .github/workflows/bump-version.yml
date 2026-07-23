@@ -1,0 +1,43 @@
+name: Bump version tag
+
+on:
+   push:
+      branches:
+         - master
+
+permissions:
+   contents: write
+
+jobs:
+   bump:
+      runs-on: ubuntu-latest
+      steps:
+         -
+            name: Checkout
+            uses: actions/checkout@v4
+            with:
+               fetch-depth: 0
+               fetch-tags: true
+
+         -
+            name: Configure Git
+            run: |
+               set -e
+               git config user.name "github-actions[bot]" || exit 1
+               git config user.email "github-actions[bot]@users.noreply.github.com" || exit 1
+
+         -
+            name: Create new version tag
+            run: |
+               set -e
+               latest_tag=$(git tag -l | grep -E '^v?[0-9]+(\.[0-9]+)*$' | sort -V | tail -n1) || exit 1
+               if [ -z "$latest_tag" ]; then
+                  new_tag="0.0.1"
+               else
+                  new_tag=$(echo "$latest_tag" | awk -F. 'BEGIN{OFS="."} {$NF += 1; print}') || exit 1
+               fi
+               while git rev-parse -q --verify "refs/tags/$new_tag" >/dev/null; do
+                  new_tag=$(echo "$new_tag" | awk -F. 'BEGIN{OFS="."} {$NF += 1; print}') || exit 1
+               done
+               git tag "$new_tag" || exit 1
+               git push origin "$new_tag" || exit 1
