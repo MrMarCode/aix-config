@@ -11,8 +11,9 @@ trigger: always_on
 - **Comments belong in code, not MR discussions** — If a decision needs to
   be remembered, put the comment in the code where someone will find it
   years later.
-- **Add helpful context to commit descriptions** — When a fix has important
-  context, put it in the commit description.
+- **Only add a comment if** the code's rationale is not obvious from
+  naming/context, or the implementation is nonstandard. The comment
+  answers "why," **not** "what" or "how." When in doubt, omit the comment.
 - **Use `https://example.org/`** for test URLs — It's a reserved domain.
 - **Add comments explaining "why" for chunking/batching** — If you chunk
   operations, explain why.
@@ -30,6 +31,19 @@ trigger: always_on
 - **Update stale references when removing services**.
 - **Put context in code comments, not just git blame** — Add a brief "why"
   and a ticket link directly in the code.
+
+## Function Documentation
+
+Required JSDoc format:
+
+```javascript
+/**
+ * Description of function purpose
+ *
+ * @param Type $param - description (optional, default value)
+ * @return Type - description of return value
+ */
+```
 
 ## Documentation
 

@@ -13,11 +13,9 @@ trigger: always_on
 
 ## Temp Files
 
-- **Use a `tmp/` folder accessible via run-box, not `/tmp`** — When
-  generating temp files, create a `tmp` directory within the project
-  or a run-box-accessible location. This allows run-box to examine
-  output directly. Avoid `/tmp` for file access reasons. Delete items
-  in the `tmp` folder when done.
+- **Use a `.tmp/` folder in the current workspace, not `/tmp`** — When
+  generating temp files, create a `.tmp` directory within the project.
+  Delete items in the `.tmp/` folder when done.
 
 ## Command Estimation
 

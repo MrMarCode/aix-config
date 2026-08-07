@@ -7,10 +7,10 @@ globs: "**/*.sh,**/*.yml,**/*.yaml"
 
 - **Shell scripts need interpreter directives** (shebang lines).
 - **Shell commands should include `|| exit 1`** for error handling.
-- **Use `mktemp` instead of hardcoded paths** in shell scripts.
+- **Use `.tmp/` directory in the current workspace** instead of `mktemp` or
+  hardcoded paths.
 - **Avoid `rm -rf "${VAR}"` in bash** — Explicitly `rm` individual files and
   `rmdir` directories.
-- **Avoid bash arrays** — They are not portable across shells.
 - **Use case statements for arg parsing** — Not hacky positional argument
   checks.
 - **Exit with non-zero on failure** — `exit 1` when something fails.

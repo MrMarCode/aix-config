@@ -43,18 +43,8 @@ trigger: always_on
      preserves history.
    * Prefer functional style — Use `.map()`, `.filter()`, native array
      methods, or toolbox utilities over imperative loops.
-   * Prefer simpler native methods — `keys(obj).sort()` is clearer than
-     `sortBy(keys(obj), identity)`.
    * Add parentheses around `||` in compound conditions — Reduces mental
      load; devs don't have to remember operator precedence.
-   * Don't compare objects with `JSON.stringify` — It's unreliable due to
-     key ordering.
-   * Avoid recursive pagination — Recursive calls for paginated API
-     results can cause stack overflows. Use iterative loop/nextTick
-     patterns instead.
-   * Avoid premature abstraction — Don't create helper functions that just
-     wrap one or two external calls.
-   * Don't roll your own templating syntax — Use established libraries.
    * Parallelize independent async calls — Use `Promise.all` when calls
      don't depend on each other.
    * Start async work early, await late — For fire-and-forget API calls,
@@ -65,9 +55,6 @@ trigger: always_on
      `MIN_TIME_FOR_TEXT_ANALYSIS_MILLIS` not `30`.
    * Co-locate related config — When filters and matchers must stay in
      sync, put them in the same config object.
-   * Use data-driven iteration over hard-coded switches.
-   * Don't parse your own data structures as strings — Build the data
-     natively where it's needed.
    * Make properties readonly when they shouldn't change after
      construction.
    * Standardize function interfaces — If `writeContentDoc` takes specific
@@ -76,11 +63,6 @@ trigger: always_on
      `isEmpty(x)` for checking array/object emptiness.
    * Separate business logic from event handling — Business logic classes
      shouldn't know about the event type that triggered them.
-   * Reduce cyclomatic complexity — Use underscore chains with comments
-     instead of nested loops/conditionals.
-   * Be safe with multibyte characters — `String.slice()` can split
-     multibyte characters. Use spread operator `[...str]` for
-     character-safe operations.
    * Keep library APIs future-proof — Even if a method doesn't need to be
      async right now, keep it async if the API contract should allow for
      it.

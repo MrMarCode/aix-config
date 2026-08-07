@@ -27,7 +27,7 @@ jobs:
                git config user.email "github-actions[bot]@users.noreply.github.com" || exit 1
 
          -
-            name: Create new version tag
+            name: Create and push version tags
             run: |
                set -e
                latest_tag=$(git tag -l | grep -E '^v?[0-9]+(\.[0-9]+)*$' | sort -V | tail -n1) || exit 1
@@ -41,3 +41,5 @@ jobs:
                done
                git tag "$new_tag" || exit 1
                git push origin "$new_tag" || exit 1
+               git tag -f latest "$new_tag" || exit 1
+               git push --force origin refs/tags/latest || exit 1

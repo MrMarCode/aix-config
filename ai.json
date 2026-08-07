@@ -6,6 +6,81 @@
       },
       "caveman": {
          "path": "./skills/caveman/"
+      },
+      "ask-matt": {
+         "path": "./skills/engineering/ask-matt"
+      },
+      "code-review": {
+         "path": "./skills/engineering/code-review"
+      },
+      "codebase-design": {
+         "path": "./skills/engineering/codebase-design"
+      },
+      "diagnosing-bugs": {
+         "path": "./skills/engineering/diagnosing-bugs"
+      },
+      "domain-modeling": {
+         "path": "./skills/engineering/domain-modeling"
+      },
+      "grill-with-docs": {
+         "path": "./skills/engineering/grill-with-docs"
+      },
+      "implement": {
+         "path": "./skills/engineering/implement"
+      },
+      "improve-codebase-architecture": {
+         "path": "./skills/engineering/improve-codebase-architecture"
+      },
+      "prototype": {
+         "path": "./skills/engineering/prototype"
+      },
+      "research": {
+         "path": "./skills/engineering/research"
+      },
+      "resolving-merge-conflicts": {
+         "path": "./skills/engineering/resolving-merge-conflicts"
+      },
+      "setup-matt-pocock-skills": {
+         "path": "./skills/engineering/setup-matt-pocock-skills"
+      },
+      "tdd": {
+         "path": "./skills/engineering/tdd"
+      },
+      "to-spec": {
+         "path": "./skills/engineering/to-spec"
+      },
+      "to-tickets": {
+         "path": "./skills/engineering/to-tickets"
+      },
+      "triage": {
+         "path": "./skills/engineering/triage"
+      },
+      "wayfinder": {
+         "path": "./skills/engineering/wayfinder"
+      },
+      "wizard": {
+         "path": "./skills/engineering/wizard"
+      },
+      "grilling": {
+         "path": "./skills/productivity/grilling"
+      },
+      "grill-me": {
+         "path": "./skills/productivity/grill-me"
+      },
+      "handoff": {
+         "path": "./skills/productivity/handoff"
+      },
+      "teach": {
+         "path": "./skills/productivity/teach"
+      },
+      "to-questionnaire": {
+         "path": "./skills/productivity/to-questionnaire"
+      },
+      "wait-what": {
+         "path": "./skills/productivity/wait-what"
+      },
+      "writing-for-agents": {
+         "path": "./skills/productivity/writing-for-agents"
       }
    },
    "mcp": {
@@ -64,7 +139,6 @@
    },
    "rules": {
       "general": "./rules/general.md",
-      "comments": "./rules/comments.md",
       "control-flow": "./rules/control-flow.md",
       "formatting": "./rules/formatting.md",
       "git": "./rules/git.md",
@@ -88,17 +162,13 @@
       "command": "./prompts/command.md",
       "create-dynamo-table-workflow": "./prompts/create-dynamo-table-workflow.md",
       "create-tool": "./prompts/create-tool.md",
-      "debug": "./prompts/debug.md",
       "lessons-learned": "./prompts/lessons-learned.md",
       "prime-context": "./prompts/prime-context.md",
       "prompt-engineer": "./prompts/prompt-engineer.md",
-      "review-changes": "./prompts/review-changes.md",
       "say": "./prompts/say.md",
       "test-a-library": "./prompts/test-a-library.md",
-      "test-driven-development": "./prompts/test-driven-development.md",
       "task-loop": "./prompts/task-loop.md",
       "justdoit": "./prompts/justdoit.md",
-      "plan": "./prompts/plan.md",
       "review": "./prompts/review.md"
    }
 }
