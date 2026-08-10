@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+script_dir=$(dirname "$0")
+if [ -x "$script_dir/node_modules/.bin/tsx" ]; then
+   exec "$script_dir/node_modules/.bin/tsx" "$script_dir/aix-skill.ts" "$@"
+fi
+exec npx -y tsx "$script_dir/aix-skill.ts" "$@"

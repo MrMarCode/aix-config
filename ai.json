@@ -81,6 +81,9 @@
       },
       "writing-for-agents": {
          "path": "./skills/productivity/writing-for-agents"
+      },
+      "skill-author": {
+         "path": "./skills/skill-author"
       }
    },
    "mcp": {
