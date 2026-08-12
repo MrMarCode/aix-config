@@ -1,8 +1,8 @@
 {
    "$schema": "https://x.a1st.dev/schemas/v1/ai.json",
    "skills": {
-      "worktree": {
-         "path": "./skills/worktree"
+      "workspace": {
+         "path": "./skills/workspace"
       },
       "caveman": {
          "path": "./skills/caveman/"

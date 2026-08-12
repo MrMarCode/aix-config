@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Git worktree manager with config-based repo resolution and symlink support."""
+"""Workspace manager: git worktrees, dev environments, and an interactive TUI."""
 
 import os
 import sys
@@ -14,9 +14,11 @@ except ImportError:
    yaml = None
 
 
-DEFAULT_CONFIG_FILE = '.worktree.yaml'
+DEFAULT_CONFIG_FILE = '.workspace.yaml'
+LEGACY_CONFIG_FILE = '.worktree.yaml'
 DEFAULT_EDITOR = 'pycharm'
-DEFAULT_METADATA_FILE = 'worktree_metadata.yaml'
+DEFAULT_METADATA_FILE = 'workspace_metadata.yaml'
+LEGACY_METADATA_FILE = 'worktree_metadata.yaml'
 DEFAULT_SKIP_MTIME_DIRS = {
    '.git', 'node_modules', '__pycache__', '.venv', 'venv', '.tox', 'dist',
    'build', 'target', '.next', 'coverage', '.mypy_cache',
@@ -26,7 +28,7 @@ DEFAULT_SKIP_MTIME_DIRS = {
 def get_state_dir():
    """@return Path - directory for persistent state."""
    data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share'))
-   state_dir = data_home / 'worktree'
+   state_dir = data_home / 'workspace'
    state_dir.mkdir(parents=True, exist_ok=True)
    return state_dir
 
@@ -37,8 +39,57 @@ def get_last_config_path():
 
 
 def get_metadata_path():
-   """@return Path - file storing worktree metadata."""
-   return get_state_dir() / DEFAULT_METADATA_FILE
+   """@return Path - file storing workspace metadata."""
+   state_dir = get_state_dir()
+   current = state_dir / DEFAULT_METADATA_FILE
+   if current.is_file():
+      return current
+
+   legacy = state_dir / LEGACY_METADATA_FILE
+   if legacy.is_file():
+      return legacy
+
+   return current
+
+
+def get_shell_command_file():
+   """@return Path|None - file the shell wrapper evals after the TUI exits."""
+   path = os.environ.get('WORKSPACE_CMD_FILE', '')
+   return Path(path) if path else None
+
+
+def write_shell_command(command):
+   """
+   Hand a command back to the shell wrapper so it runs in the user's shell.
+
+   @param str command - shell command, e.g. "cd '/path'"
+   @return bool - True if the wrapper will run it
+   """
+   cmd_file = get_shell_command_file()
+   if not cmd_file:
+      print(command)
+      return False
+
+   cmd_file.write_text(f'{command}\n')
+   return True
+
+
+def shell_quote(value):
+   """@return str - single-quoted value safe for a shell command."""
+   escaped = str(value).replace("'", "'\\''")
+   return f"'{escaped}'"
+
+
+def cd_command(path, run_claude=False):
+   """
+   @param str path - directory to change into
+   @param bool run_claude - append `&& exec claude`
+   @return str - shell command for the wrapper to eval
+   """
+   command = f'cd {shell_quote(path)}'
+   if run_claude:
+      return f'{command} && exec claude'
+   return command
 
 
 def load_metadata():
@@ -86,13 +137,24 @@ def resolve_config_path(config_path):
    if config_path:
       return config_path
 
-   env_path = os.environ.get('WORKTREE_CONFIG', '')
+   env_path = (
+      os.environ.get('WORKSPACE_CONFIG', '')
+      or os.environ.get('WORKTREE_CONFIG', '')
+   )
    if env_path:
       return env_path
 
    cwd_config = Path.cwd() / DEFAULT_CONFIG_FILE
    if cwd_config.is_file():
       return str(cwd_config)
+
+   legacy_config = Path.cwd() / LEGACY_CONFIG_FILE
+   if legacy_config.is_file():
+      _print_warning(
+         f'Using legacy {LEGACY_CONFIG_FILE} — rename it with: '
+         f'mv {LEGACY_CONFIG_FILE} {DEFAULT_CONFIG_FILE}'
+      )
+      return str(legacy_config)
 
    last_config = get_last_config_path()
    if last_config.is_file():
@@ -116,7 +178,7 @@ def load_config(config_path):
    if yaml is None:
       _exit_error(
          'YAML is required but not installed. '
-         'Run: worktree.py install'
+         'Run: workspace.py install'
       )
 
    path = Path(config_path)
@@ -441,7 +503,7 @@ def get_script_dir():
 def get_venv_dir():
    """@return Path - local venv used for worktree dependencies."""
    data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share'))
-   return data_home / 'worktree' / 'venv'
+   return data_home / 'workspace' / 'venv'
 
 
 def get_requirements_txt():
@@ -464,45 +526,49 @@ def get_shell_rc(shell):
 
 def get_shell_function(venv_dir, script_path):
    """
-   Build a shell function that wraps worktree.py and can cd on exit code 2.
+   Build a shell function that wraps workspace.py and evals its command file.
+
+   The TUI writes a command (`cd '<dir>'`, optionally `&& exec claude`) to
+   WORKSPACE_CMD_FILE; the function evals it so it affects the caller's shell.
 
    @param Path venv_dir - local virtual environment
-   @param Path script_path - path to worktree.py
+   @param Path script_path - path to workspace.py
    @return str - shell function to append
    """
    python = venv_dir / 'bin' / 'python'
-   return f"""worktree() {{
-   local selected_dir
-   selected_dir=$({python} {script_path} "$@")
-   local status=$?
-   if [ $status -eq 2 ]; then
-      cd "$selected_dir" || return 1
-   elif [ -n "$selected_dir" ]; then
-      printf '%s\\n' "$selected_dir"
+   return f"""workspace() {{
+   local cmd_file rc
+   cmd_file="$(mktemp "${{TMPDIR:-/tmp}}/workspace-cmd.XXXXXX")"
+   WORKSPACE_CMD_FILE="$cmd_file" {python} {script_path} "$@"
+   rc=$?
+   if [ -s "$cmd_file" ]; then
+      eval "$(cat "$cmd_file")"
+      rc=$?
    fi
-   return $status
+   rm -f "$cmd_file"
+   return $rc
 }}"""
 
 
 def update_shell_rc(shell, venv_dir, script_path):
    """
-   Add or replace the worktree shell function in the shell's rc file.
+   Add or replace the workspace shell function in the shell's rc file.
 
    @param str shell - 'zsh' or 'bash'
    @param Path venv_dir - local virtual environment
-   @param Path script_path - path to worktree.py
+   @param Path script_path - path to workspace.py
    """
    rc = get_shell_rc(shell)
    function = get_shell_function(venv_dir, script_path)
 
    existing = rc.read_text() if rc.is_file() else ''
-   marker = '# generated by worktree.py install'
+   marker = '# generated by workspace.py install'
    if marker in existing:
       return
 
    with open(rc, 'a') as f:
       f.write(f'\n{marker}\n{function}\n')
-   print(f"Added worktree function to {rc}")
+   print(f"Added workspace function to {rc}")
 
 
 def install_venv(venv_dir):
@@ -532,11 +598,11 @@ def install_venv(venv_dir):
 
 def cmd_install(shells):
    """
-   Install the `worktree` shell function and local dependencies.
+   Install the `workspace` shell function and local dependencies.
 
    @param list[str] shells - list of 'zsh' and/or 'bash'; empty means auto-detect
    """
-   script_path = get_script_dir() / 'worktree.py'
+   script_path = get_script_dir() / 'workspace.py'
    venv_dir = get_venv_dir()
 
    if not venv_dir.is_dir():
@@ -686,6 +752,205 @@ def build_tui_worktrees(config):
    return worktrees
 
 
+def count_worktrees(repo_path):
+   """
+   @param str repo_path - path to the git repo
+   @return int - number of linked worktrees, excluding the canonical repo
+   """
+   result = git(repo_path, 'worktree', 'list', '--porcelain', check=False)
+   if result.returncode != 0:
+      return 0
+
+   main_result = git(repo_path, 'rev-parse', '--show-toplevel', check=False)
+   main_worktree = main_result.stdout.strip() if main_result.returncode == 0 else ''
+
+   entries = parse_worktree_porcelain(result.stdout)
+   return len([e for e in entries if e.get('path') and e['path'] != main_worktree])
+
+
+def build_projects(config):
+   """
+   Build one entry per configured repo for the projects grid.
+
+   No network calls are made so the grid renders instantly.
+
+   @param dict config - parsed config
+   @return list[dict] - project entries with counts and last-activity age
+   """
+   repos = config.get('repos', {})
+   projects = []
+
+   for name, repo_config in repos.items():
+      repo_path = repo_config.get('path', '')
+      if not repo_path or not is_git_repo(repo_path):
+         continue
+
+      skip_dirs = resolve_skip_mtime_dirs(name, config)
+      mtime = get_worktree_mtime(repo_path, skip_dirs)
+      projects.append({
+         'name': name,
+         'repo_path': repo_path,
+         'count': count_worktrees(repo_path),
+         'mtime': mtime,
+         'ago': format_relative_time(mtime),
+         'editor': resolve_editor(name, config, ''),
+         'diff': resolve_diff(name, config, ''),
+      })
+
+   return sorted(projects, key=lambda p: (p['mtime'] or 0), reverse=True)
+
+
+def build_project_worktrees(config, name):
+   """
+   Build the rows for a single project window: mainline first, then worktrees.
+
+   @param dict config - parsed config
+   @param str name - repo key
+   @return list[dict] - rows newest-first, with a mainline row at index 0
+   """
+   repo_path = resolve_repo(name, config)
+   skip_dirs = resolve_skip_mtime_dirs(name, config)
+   editor = resolve_editor(name, config, '')
+   diff = resolve_diff(name, config, '')
+
+   rows = [
+      entry for entry in build_tui_worktrees(config)
+      if entry['name'] == name
+   ]
+
+   branch_result = git(repo_path, 'rev-parse', '--abbrev-ref', 'HEAD', check=False)
+   mtime = get_worktree_mtime(repo_path, skip_dirs)
+   mainline = {
+      'name': name,
+      'branch': branch_result.stdout.strip() or '(detached)',
+      'worktree_path': repo_path,
+      'repo_path': repo_path,
+      'display_path': repo_path,
+      'mtime': mtime,
+      'ago': format_relative_time(mtime),
+      'metadata': load_metadata().get(repo_path, {}),
+      'editor': editor,
+      'diff': diff,
+      'mainline': True,
+      'status': 'fetching...',
+   }
+
+   return [mainline] + rows
+
+
+def sync_mainline(repo_path):
+   """
+   Fetch origin and fast-forward the canonical repo when it is safe to do so.
+
+   Only fast-forwards a clean working tree that is strictly behind upstream.
+
+   @param str repo_path - path to the canonical repo
+   @return str - short status message for display
+   """
+   fetch = git(repo_path, 'fetch', '--prune', check=False)
+   if fetch.returncode != 0:
+      return 'fetch failed'
+
+   upstream = git(
+      repo_path, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}',
+      check=False,
+   )
+   if upstream.returncode != 0 or not upstream.stdout.strip():
+      return 'no upstream'
+
+   counts = git(
+      repo_path, 'rev-list', '--left-right', '--count', 'HEAD...@{upstream}',
+      check=False,
+   )
+   if counts.returncode != 0:
+      return 'unknown'
+
+   parts = counts.stdout.split()
+   ahead, behind = (int(parts[0]), int(parts[1])) if len(parts) == 2 else (0, 0)
+
+   if ahead and behind:
+      return f'WARNING diverged ({ahead} ahead, {behind} behind)'
+   if ahead:
+      return f'{ahead} ahead'
+   if not behind:
+      return 'up to date'
+
+   dirty = git(repo_path, 'status', '--porcelain', check=False)
+   if dirty.stdout.strip():
+      return f'WARNING dirty, {behind} behind — not fast-forwarded'
+
+   merge = git(repo_path, 'merge', '--ff-only', '@{upstream}', check=False)
+   if merge.returncode != 0:
+      return f'WARNING could not fast-forward ({behind} behind)'
+   return f'fast-forwarded {behind}'
+
+
+def create_workspace(config, name, branch, base_ref, dir_name, parent_dir,
+                     symlinks=True):
+   """
+   Create a worktree for a repo, used by both the CLI and the TUI.
+
+   @param dict config - parsed config
+   @param str name - repo key or path
+   @param str branch - branch to check out or create
+   @param str base_ref - ref to branch from when the branch is new, or empty
+   @param str dir_name - directory name, or empty to derive from the branch
+   @param str parent_dir - directory the worktree is created in
+   @param bool symlinks - create the configured symlinks (default True)
+   @return str - path to the new worktree
+   """
+   repo_path = resolve_repo(name, config)
+   if not is_git_repo(repo_path):
+      _exit_error(f"Git repo not found at: {repo_path}")
+
+   worktree_dir = str(Path(parent_dir) / (dir_name or safe_branch_dir(branch)))
+   if Path(worktree_dir).exists():
+      _exit_error(f"Path already exists: {worktree_dir}")
+
+   Path(worktree_dir).parent.mkdir(parents=True, exist_ok=True)
+
+   if branch_exists(repo_path, branch):
+      git(repo_path, 'worktree', 'add', worktree_dir, branch, capture=False)
+   elif base_ref:
+      git(
+         repo_path, 'worktree', 'add', '-b', branch, worktree_dir, base_ref,
+         capture=False,
+      )
+   else:
+      git(repo_path, 'worktree', 'add', '-b', branch, worktree_dir, capture=False)
+
+   if symlinks:
+      items = resolve_symlinks(name, config, '')
+      if items:
+         create_symlinks(repo_path, worktree_dir, items)
+
+   return worktree_dir
+
+
+def cmd_grid(config_path):
+   """
+   Launch the projects grid: one box per configured repo.
+
+   @param str config_path - path to config file
+   """
+   config = load_config(config_path)
+   if not config:
+      _exit_error(f"No config file found at {config_path}")
+
+   projects = build_projects(config)
+   if not projects:
+      print("No configured repos found")
+      return
+
+   try:
+      from workspace_tui import WorkspaceApp
+   except ImportError:
+      _exit_error('textual is required for the grid. Run: workspace install')
+
+   app = WorkspaceApp(config, config_path)
+   app.run()
+
+
 def cmd_list_interactive(config_path):
    """
    Launch an interactive UI listing worktrees by recent activity.
@@ -702,7 +967,7 @@ def cmd_list_interactive(config_path):
       return
 
    try:
-      from worktree_tui import WorktreeListApp
+      from workspace_tui import WorktreeListApp
    except ImportError:
       print("Last modified\tBranch\tProject\tPath")
       for entry in worktrees:
@@ -727,24 +992,24 @@ def cmd_list_interactive(config_path):
       if result == 1:
          continue
       if result:
-         print(result)
-         sys.exit(2)
+         write_shell_command(result)
       break
 
 
 # -- Commands --------------------------------------------------------
 
 def cmd_create(name, branch, symlink_flag, symlink_items, custom_path,
-               config_path):
+               config_path, base_ref=''):
    """
-   Create a worktree, optionally symlinking shared files.
+   Create a worktree, symlinking shared files by default.
 
    @param str name - repo name or path
    @param str branch - branch to check out
-   @param bool symlink_flag - whether to create symlinks
+   @param bool symlink_flag - whether to create symlinks (default True)
    @param str symlink_items - comma-separated override, or empty
    @param str custom_path - custom subdirectory, or empty
    @param str config_path - path to config file
+   @param str base_ref - ref to branch from for new branches, or empty
    """
    config = load_config(config_path)
    if not config and symlink_flag and not symlink_items:
@@ -766,6 +1031,11 @@ def cmd_create(name, branch, symlink_flag, symlink_items, custom_path,
 
    if branch_exists(repo_path, branch):
       git(repo_path, 'worktree', 'add', worktree_dir, branch, capture=False)
+   elif base_ref:
+      git(
+         repo_path, 'worktree', 'add', '-b', branch, worktree_dir, base_ref,
+         capture=False,
+      )
    else:
       git(repo_path, 'worktree', 'add', '-b', branch, worktree_dir, capture=False)
 
@@ -1014,7 +1284,280 @@ def cmd_list_merged(config_path):
    print('\n'.join(rows))
 
 
+# -- Dev environment setup (devbox + direnv + op secrets) ------------
+
+DEVENV_SYMLINK_ITEMS = [
+   'devbox.json', 'devbox.lock', '.envrc', '.env', '.devbox', '.localbin', '.venv',
+]
+
+GLOBAL_IGNORE_HEADER = '# workspace skill — per-repo dev environment files (never committed)'
+GLOBAL_IGNORE_PATTERNS = [
+   'devbox.json',
+   'devbox.lock',
+   '.devbox/',
+   '.direnv/',
+   '.envrc',
+   '.env',
+   '.localbin/',
+   '.venv/',
+]
+
+ENVRC_TEMPLATE = '''# Managed by the workspace skill. Never tracked in git (global ignore).
+eval "$(devbox generate direnv --print-envrc)"
+
+# Plain values load into the environment; op:// references stay literal
+# until you run `secrets`.
+dotenv_if_exists .env
+
+PATH_add .localbin
+
+# devbox's python plugin sets VENV_DIR; put its venv on PATH for
+# direnv-loaded shells too (devbox only activates it in devbox shell).
+if [ -n "${VENV_DIR:-}" ]; then
+   PATH_add "$VENV_DIR/bin"
+fi
+'''
+
+ENV_TEMPLATE = '''# Project env vars. Plain values load automatically via direnv.
+# op:// secret references are NOT resolved automatically — run `secrets`
+# to start a subshell with them injected by the 1Password CLI.
+# EXAMPLE_TOKEN=op://vault/item/field
+'''
+
+SECRETS_TEMPLATE = '''#!/usr/bin/env bash
+# Start a subshell with op:// references in .env resolved by 1Password CLI.
+# Exit the subshell to drop the resolved secrets.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+echo "INFO Starting subshell with secrets from $root/.env — exit to drop them"
+exec op run --env-file="$root/.env" -- "${SHELL:-zsh}"
+'''
+
+
+def run_command(cmd, cwd=None):
+   """
+   Run a command, failing loudly on error.
+
+   @param list[str] cmd - command and args
+   @param Path cwd - working directory (optional)
+   """
+   result = subprocess.run(cmd, cwd=cwd)
+
+   if result.returncode != 0:
+      _exit_error(f'Command failed: {" ".join(cmd)}')
+
+
+def ensure_project_files(repo_path):
+   """
+   Create devbox.json, .envrc, .env, and .localbin/secrets in the repo.
+
+   @param Path repo_path - canonical repo path
+   """
+   if not (repo_path / 'devbox.json').exists():
+      _print_info(f'Running devbox init in {repo_path}')
+      run_command(['devbox', 'init'], cwd=repo_path)
+   else:
+      _print_info('devbox.json already exists — keeping it')
+
+   envrc = repo_path / '.envrc'
+   if not envrc.exists():
+      envrc.write_text(ENVRC_TEMPLATE)
+      _print_info(f'Wrote {envrc}')
+
+   env_file = repo_path / '.env'
+   if not env_file.exists():
+      env_file.write_text(ENV_TEMPLATE)
+      _print_info(f'Wrote {env_file}')
+
+   localbin = repo_path / '.localbin'
+   localbin.mkdir(exist_ok=True)
+   secrets = localbin / 'secrets'
+   if not secrets.exists():
+      secrets.write_text(SECRETS_TEMPLATE)
+      secrets.chmod(0o755)
+      _print_info(f'Wrote {secrets}')
+
+   _print_info('Running devbox install (materializes .devbox and devbox.lock)')
+   run_command(['devbox', 'install'], cwd=repo_path)
+   run_command(['direnv', 'allow', str(repo_path)])
+
+
+def find_repo_block(lines, name):
+   """
+   Find the line range of a repo entry inside the repos: block.
+
+   @param list[str] lines - config file lines
+   @param str name - repo key
+   @return tuple(int, int, int) - (start, end, key_indent) or (-1, -1, 0)
+   """
+   in_repos = False
+   repos_indent = -1
+   start = -1
+   key_indent = 0
+
+   for i, line in enumerate(lines):
+      stripped = line.rstrip('\n')
+      if not stripped.strip():
+         continue
+      indent = len(stripped) - len(stripped.lstrip())
+
+      if stripped.strip() == 'repos:':
+         in_repos = True
+         repos_indent = indent
+         continue
+      if not in_repos:
+         continue
+      if indent <= repos_indent:
+         in_repos = False
+         continue
+
+      if start == -1 and stripped.strip() == f'{name}:':
+         start = i
+         key_indent = indent
+         continue
+      if start != -1 and indent <= key_indent:
+         return (start, i, key_indent)
+
+   if start != -1:
+      return (start, len(lines), key_indent)
+   return (-1, -1, 0)
+
+
+def update_workspace_config(config_path, name, items):
+   """
+   Add symlink items to a repo entry in the config, preserving formatting.
+
+   @param Path config_path - path to the workspace config
+   @param str name - repo key
+   @param list[str] items - symlink entries to ensure
+   """
+   lines = config_path.read_text().splitlines(keepends=True)
+   start, end, key_indent = find_repo_block(lines, name)
+
+   if start == -1:
+      _exit_error(f'Repo "{name}" not found in {config_path} — add it first')
+
+   child_indent = ' ' * (key_indent + 2)
+   item_indent = ' ' * (key_indent + 4)
+   block = lines[start:end]
+
+   existing = [
+      line.strip()[2:].strip() for line in block if line.strip().startswith('- ')
+   ]
+   missing = [item for item in items if item not in existing]
+   if not missing:
+      _print_info(f'All symlink entries already in {config_path}')
+      return
+
+   new_items = [f'{item_indent}- {item}\n' for item in missing]
+   symlinks_idx = next(
+      (i for i, line in enumerate(block) if line.strip() == 'symlinks:'), -1
+   )
+
+   if symlinks_idx == -1:
+      insert_at = start + next(
+         (i for i, line in enumerate(block) if line.strip().startswith('path:')), 0
+      ) + 1
+      lines[insert_at:insert_at] = [f'{child_indent}symlinks:\n'] + new_items
+   else:
+      last_item = start + symlinks_idx
+      for i in range(symlinks_idx + 1, len(block)):
+         if block[i].strip().startswith('- '):
+            last_item = start + i
+         elif block[i].strip():
+            break
+      lines[last_item + 1:last_item + 1] = new_items
+
+   config_path.write_text(''.join(lines))
+   _print_info(f'Added {", ".join(missing)} to {name} symlinks in {config_path}')
+
+
+def ensure_global_gitignore():
+   """Append dev environment patterns to the global git ignore file."""
+   ignore_path = subprocess.run(
+      ['git', 'config', '--global', 'core.excludesFile'],
+      capture_output=True, text=True
+   ).stdout.strip()
+
+   path = Path(ignore_path).expanduser() if ignore_path else (
+      Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'git' / 'ignore'
+   )
+   path.parent.mkdir(parents=True, exist_ok=True)
+   content = path.read_text() if path.exists() else ''
+
+   missing = [p for p in GLOBAL_IGNORE_PATTERNS if p not in content.splitlines()]
+   if not missing:
+      _print_info('Global git ignore already has all dev environment patterns')
+      return
+
+   prefix = '' if content.endswith('\n') or not content else '\n'
+   header = '' if GLOBAL_IGNORE_HEADER in content else f'{GLOBAL_IGNORE_HEADER}\n'
+   path.write_text(content + prefix + header + '\n'.join(missing) + '\n')
+   _print_info(f'Added {len(missing)} patterns to {path}')
+
+
+def ensure_direnv_whitelist(paths):
+   """
+   Whitelist path prefixes in direnv.toml so .envrc loads without manual allow.
+
+   @param list[Path] paths - directory prefixes to whitelist
+   """
+   toml_path = (
+      Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
+      / 'direnv' / 'direnv.toml'
+   )
+   toml_path.parent.mkdir(parents=True, exist_ok=True)
+   content = toml_path.read_text() if toml_path.exists() else ''
+
+   wanted = [str(p) for p in paths if f'"{p}"' not in content]
+   if not wanted:
+      _print_info('direnv whitelist already covers these paths')
+      return
+
+   if '[whitelist]' in content and 'prefix' in content:
+      _print_warning(
+         f'direnv.toml already has a whitelist — add these prefixes manually: {wanted}'
+      )
+      return
+
+   entries = ', '.join(f'"{p}"' for p in wanted)
+   toml_path.write_text(content + f'\n[whitelist]\nprefix = [ {entries} ]\n')
+   _print_info(f'Whitelisted {entries} in {toml_path}')
+
+
+def cmd_init(name, config_path):
+   """
+   Set up a per-repo isolated dev environment (devbox + direnv + op secrets).
+
+   @param str name - repo key or path
+   @param str config_path - path to config file
+   """
+   path = Path(config_path)
+   if not path.is_file():
+      _exit_error(f'No config file found at {config_path}')
+
+   config = load_config(config_path)
+   repo_path = Path(resolve_repo(name, config))
+
+   if not repo_path.is_dir():
+      _exit_error(f'Repo path does not exist: {repo_path}')
+
+   ensure_project_files(repo_path)
+   update_workspace_config(path, name, DEVENV_SYMLINK_ITEMS)
+   ensure_global_gitignore()
+   ensure_direnv_whitelist([path.parent, repo_path])
+   _print_info(
+      f'Done. cd {repo_path} to activate; new workspaces get the '
+      'environment automatically via symlinks'
+   )
+
+
 # -- Output helpers --------------------------------------------------
+
+def _print_info(message):
+   print(f"INFO {message}")
+
 
 def _exit_error(message):
    print(f"ERROR {message}", file=sys.stderr)
@@ -1029,8 +1572,8 @@ def _print_warning(message):
 
 def build_parser():
    parser = argparse.ArgumentParser(
-      prog='worktree',
-      description='Git worktree manager with config-based repo resolution',
+      prog='workspace',
+      description='Workspace manager: git worktrees plus per-repo dev environments',
    )
    parser.add_argument(
       '--config', default=None,
@@ -1047,8 +1590,16 @@ def build_parser():
       help='Place worktree at <pwd>/<subdir>',
    )
    create_p.add_argument(
-      '--symlink', nargs='?', const=True, default=False,
-      help='Symlink files (optionally pass comma-separated items)',
+      '--symlink', nargs='?', const=True, default=True,
+      help='Comma-separated symlink override (config symlinks are used by default)',
+   )
+   create_p.add_argument(
+      '--no-symlink', dest='symlink', action='store_const', const=False,
+      help='Do not symlink shared files into the new workspace',
+   )
+   create_p.add_argument(
+      '--base-ref', dest='base_ref', default='',
+      help='Ref to branch from when creating a new branch',
    )
 
    remove_p = subparsers.add_parser('remove', help='Remove a worktree')
@@ -1066,6 +1617,15 @@ def build_parser():
       '--configured', action='store_true',
       help='List all configured repos',
    )
+   list_p.add_argument(
+      '--all', dest='all_worktrees', action='store_true',
+      help='Flat interactive list of every workspace by recent activity',
+   )
+
+   init_p = subparsers.add_parser(
+      'init', help='Set up a per-repo dev environment (devbox + direnv + secrets)',
+   )
+   init_p.add_argument('name', help='Repo name from config, or path')
 
    install_p = subparsers.add_parser(
       'install', help='Install the worktree shell function and dependencies',
@@ -1128,18 +1688,18 @@ def main(argv=None):
    parser = build_parser()
    args = parser.parse_args(argv)
 
-   if not args.command:
-      parser.print_help()
-      sys.exit(1)
-
    config_path = resolve_config_path(args.config)
+
+   if not args.command:
+      cmd_grid(config_path)
+      return
 
    if args.command == 'create':
       symlink_flag = args.symlink is not False
       symlink_items = args.symlink if isinstance(args.symlink, str) else ''
       cmd_create(
          args.name, args.branch, symlink_flag,
-         symlink_items, args.custom_path, config_path,
+         symlink_items, args.custom_path, config_path, args.base_ref,
       )
 
    elif args.command == 'remove':
@@ -1151,7 +1711,13 @@ def main(argv=None):
          cmd_remove(args.name, args.branch, config_path)
 
    elif args.command == 'list':
-      cmd_list(args.name, config_path, args.configured)
+      if args.all_worktrees:
+         cmd_list_interactive(config_path)
+      else:
+         cmd_list(args.name, config_path, args.configured)
+
+   elif args.command == 'init':
+      cmd_init(args.name, config_path)
 
    elif args.command == 'install':
       shells = [s.strip() for s in args.shell.split(',') if s.strip()]
