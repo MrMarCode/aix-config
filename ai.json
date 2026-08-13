@@ -84,6 +84,9 @@
       },
       "skill-author": {
          "path": "./skills/skill-author"
+      },
+      "become-another-person": {
+         "path": "./skills/become-another-person"
       }
    },
    "mcp": {
@@ -104,12 +107,12 @@
          ]
       },
       "libragen": {
+         "enabled": false,
          "command": "npx",
          "args": [
             "-y",
             "@libragen/mcp"
-         ],
-         "enabled": false
+         ]
       },
       "run-box": {
          "url": "http://127.0.0.1:3100/mcp"
@@ -121,23 +124,23 @@
          ]
       },
       "mcp-playwright": {
+         "command": "npx",
          "args": [
-         "-y",
-         "@playwright/mcp@latest"
-         ],
-         "command": "npx"
+            "-y",
+            "@playwright/mcp@latest"
+         ]
       },
       "custom-gitlab": {
          "url": "http://localhost:3015/mcp"
       },
       "nixos": {
+         "command": "docker",
          "args": [
-         "run",
-         "--rm",
-         "-i",
-         "ghcr.io/utensils/mcp-nixos"
-         ],
-         "command": "docker"
+            "run",
+            "--rm",
+            "-i",
+            "ghcr.io/utensils/mcp-nixos"
+         ]
       }
    },
    "rules": {
@@ -173,5 +176,6 @@
       "task-loop": "./prompts/task-loop.md",
       "justdoit": "./prompts/justdoit.md",
       "review": "./prompts/review.md"
-   }
+   },
+   "agents": {}
 }
