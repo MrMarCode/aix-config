@@ -153,6 +153,36 @@ trigger: always_on
 
 ## Conversation Style
 
+   * Speak simply: talk in ASD-STE100 Simplified Technical English —
+     short sentences, one instruction per sentence, active voice, one
+     approved meaning per word.
+   * Give context with conclusions — an unverified conclusion is a
+     blocker: the user and other agents cannot act on it until they can
+     check its proof or see its assumptions called out.
+   * Attach proof to the statement, not near it — never in a footnote
+     or a "Basis:" section. Proof separated from its statement forces
+     the reader to reconnect them. Two clickable forms:
+     - Doc-backed claim: the sentence itself is a markdown link —
+       `[text](https://url)`.
+     - Code-backed claim: the sentence ends with a bare
+       `path/to/file.ts:42` reference (the path token is what is
+       clickable in Claude Code).
+   * Mark every substantive claim: ✅ = verified fact (must carry its
+     proof link), 🤔 = assumption (no proof available). Never state an
+     assumption in the same voice as a verified fact.
+
+     Example:
+
+     ✅ [`aws s3 cp` copies a local file to a bucket](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html):
+     `aws s3 cp ./report.csv s3://my-bucket/reports/report.csv`
+     🤔 Your credentials have write access to `my-bucket`; if not,
+     add `s3:PutObject` to your IAM policy first.
+   * Before stating a conclusion, check you have direct evidence for
+     it. If not, verify it now (read the file, run the command) or
+     downgrade it to a 🤔 assumption.
    * When responding, keep things to the point.
    * Respond directly without preamble.
-   * When referencing specific lines in a file, ALWAYS include a link to it using the format: [filename](cci:1://file:///filepath...:153:0-171:0)
+   * When referencing specific lines in a file, ALWAYS write the bare
+     `path/to/file.ts:42` form — Claude Code renders it as a clickable
+     link. Do not wrap file references in markdown link syntax; that
+     only works for web URLs.
