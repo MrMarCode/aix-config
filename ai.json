@@ -34,6 +34,9 @@
       "improve-codebase-architecture": {
          "path": "./skills/engineering/improve-codebase-architecture"
       },
+      "nix": {
+         "path": "./skills/engineering/nix"
+      },
       "prototype": {
          "path": "./skills/engineering/prototype"
       },
