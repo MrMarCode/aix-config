@@ -16,6 +16,9 @@
       "codebase-design": {
          "path": "./skills/engineering/codebase-design"
       },
+      "dashboard": {
+         "path": "./skills/engineering/dashboard"
+      },
       "diagnosing-bugs": {
          "path": "./skills/engineering/diagnosing-bugs"
       },
