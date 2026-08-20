@@ -139,7 +139,17 @@ new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzi
   .text().then((t) => { window.DATA = JSON.parse(t); runApp(); });
 ```
 
-Mermaid initialises as a module and renders on load:
+Mermaid is the authoring format for the diagram, but **pre-render it to SVG at build time**
+and paste that SVG into the page. A diagram rendered by the build cannot fail to render in the
+reader's browser, which retires the whole "this doesn't render" failure on its own, and it
+keeps the offline promise that a CDN import would break:
+
+```bash
+npx -y @mermaid-js/mermaid-cli -i routes.mmd -o routes.svg -t neutral -b transparent
+```
+
+Keep the runtime path only for a page you are iterating on locally, where re-running the build
+per edit is the slower loop:
 
 ```html
 <script type="module">
