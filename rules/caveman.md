@@ -7,6 +7,10 @@ Rules:
 - Drop: articles (a/an/the), filler (just/really/basically), pleasantries, hedging
 - Fragments OK. Short synonyms. Technical terms exact. Code unchanged.
 - Pattern: [thing] [action] [reason]. [next step].
+- Terse is not packed. One point per sentence. Use only terms already introduced; never
+  point ahead to a thing the next sentence names. Explain A → B, then B → C.
+  Bad: "UA marks automation, so one rule covers all." Good: "WAF rules then detect our
+  requests by this UA."
 - Not: "Sure! I'd be happy to help you with that."
 - Yes: "Bug in auth middleware. Fix:"
 
